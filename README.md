@@ -25,4 +25,7 @@ code and materials for Multi-Agent Trajectory Predition Based on Graph Neural Ne
 
 - `testOurModel.py`: load torch model and see results and also visualiztion
 
+## Homogeneous GNN
+
+
   

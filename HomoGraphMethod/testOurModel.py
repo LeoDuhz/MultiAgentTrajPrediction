@@ -1,3 +1,4 @@
+#test our model, draw pictures, get accuracy
 import numpy as np
 from pathlib import Path
 import torch
@@ -14,20 +15,15 @@ from parameters import playerNum, fieldLength, fieldWidth, penaltyLength, penalt
 from dataPreprocess import readFromText, generateTimeSeqData, convertPlayData2List, convertPlayData2Y, convertBallData2List, convertBallData2Y, checkPlayerDataValid, checkBallDataValid, processMin_Max_Norm
 from visualize import plotTimeSeqData, plotData, drawRobots
 from SSLDataset import SSLData, SSLDataset
-from Net import s2vNet, pnaNet, PNAMODEL
-from heterogeneous.heter import HeterogeneousGraph, MultiHeterGraph
-
-# writer1 = SummaryWriter('./log')
+from Net import Net
 
 epo = 0
 picNum = 0
 
-# myfile = Path("./dataset")
-
 # File preprocessing
 print('Data preprocessing begins!')
 
-allData = readFromText('./dhzData')
+allData = readFromText('../dhzData')
 allData = processMin_Max_Norm(allData)
 print('dataset Min-Max normalization end!')
 
@@ -44,60 +40,12 @@ train_len = int(0.7 * length)
 val_len = int(0.15 * length)
 test_len = length - train_len - val_len
 
-# model = s2vNet().to(device)
-# model = pnaNet().to(device)
-node_input_channels = np.array([4,4,4])
-node_features = np.array([4,4,4])
-output_channels = np.array([2,2,2])
-model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels)
+model = torch.load('./modelname.pth')
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
 batch_size = 30
 batch_num = int(train_len/batch_size) + 1
-
-def train():
-    model.train()
-    loss_all = 0
-
-    for i in range(batch_num):
-        if(i == batch_num - 1):
-            optimizer.zero_grad()
-            data = ssldata.dataset[i*batch_size]
-            out = model(data)
-            label = data.y
-            loss = criterion(out[0], label[0])
-            loss = loss + criterion(out[1],label[1])
-            loss_all += loss.item()
-            for j in range(i*batch_size+1, train_len):
-                data = ssldata.dataset[j]
-                out = model(data)
-                label = data.y
-                loss += criterion(out[0], label[0])
-                loss += criterion(out[1],label[1])
-                loss_all += loss.item()
-            loss.backward()
-            optimizer.step()
-        else:
-            optimizer.zero_grad()
-            data = ssldata.dataset[i*batch_size]
-            out = model(data)
-            label = data.y
-            loss = criterion(out[0], label[0])
-            loss = loss + criterion(out[1],label[1])
-            loss_all += loss.item()
-            for j in range(i*batch_size+1, (i+1)*batch_size):
-                data = ssldata.dataset[j]
-                out = model(data)
-                label = data.y
-                loss = criterion(out[0], label[0])
-                loss = loss + criterion(out[1],label[1])
-                loss_all += loss.item()
-            loss.backward()
-            optimizer.step()
-
-    # # print('train loss: ', loss_all/train_len)
-    return loss_all/train_len
 
 def evaluate(loader, draw=False):
     model.eval()
@@ -150,19 +98,13 @@ def evaluate(loader, draw=False):
 def main():
     print('Start training')
     # f = open("./epochAcc.txt", "w")
-    for epoch in range(200):
+    for epoch in range(1):
         global epo
         global picNum
         global batch_size
         global batch_num
         
-        if epo > 20:
-            batch_size = 20
-            batch_num = int(train_len/batch_size) + 1
         picNum = 0
-        loss = train()
-
-        # torch.save(model, '2spredforGNN_plus/{:03d}.pth'.format(epo))
 
         if epoch > -1:
             # if epoch > 40:
@@ -170,16 +112,7 @@ def main():
             train_acc, train_loss = evaluate(ssldata.dataset[:train_len])
             # val_acc, val_loss = evaluate(ssldata.dataset[train_len:train_len+val_len])
             test_acc, test_loss = evaluate(ssldata.dataset[train_len+val_len:])
-        # writer1.add_scalar('train loss', loss, epoch)
-        # writer1.add_scalar('train accuracy', train_acc, epoch)
-        # # writer1.add_scalar('valid accuracy', val_acc, epoch)
-        # writer1.add_scalar('test accuracy', test_acc, epoch)
-        # writer1.add_scalar('loss/train loss', train_loss, epoch)
-        # # writer1.add_scalar('loss/val loss', val_loss, epoch)
-        # writer1.add_scalar('loss/test loss', test_loss, epoch)
-        # train_loss = evaluate(ssldata.dataset[:train_len])
-        # val_loss = evaluate(ssldata.dataset[train_len:train_len+val_len])
-        # test_loss = evaluate(ssldata.dataset[train_len+val_len:])
+
         print('epoch:{:03d}, train loss:{:.5f}, train accuracy:{:.5f}, test loss:{:.5f}, test accuracy:{:.5f} '.format(epoch, loss, train_acc, test_loss, test_acc))
         # f.write('epoch:{:03d}, train loss:{:.5f}, train accuracy:{:.5f}, valid accuracy:{:.5f}, test accuracy:{:.5f} '.format(epoch, loss, train_acc, val_acc, test_acc))
         epo += 1

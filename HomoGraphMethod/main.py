@@ -13,9 +13,8 @@ from dataFormat import Player, BallData, GameData, TimeSeqGameData
 from parameters import playerNum, fieldLength, fieldWidth, penaltyLength, penaltyWidth, timeDiff, savePic, accThreshold, accThresholdReal, device
 from dataPreprocess import readFromText, generateTimeSeqData, convertPlayData2List, convertPlayData2Y, convertBallData2List, convertBallData2Y, checkPlayerDataValid, checkBallDataValid, processMin_Max_Norm
 from visualize import plotTimeSeqData, plotData, drawRobots
-from SSLDataset import SSLData, SSLDataset
-from Net import s2vNet, pnaNet, PNAMODEL
-from heterogeneous.heter import HeterogeneousGraph, MultiHeterGraph
+from MyOwnDataset import MyOwnDataset
+from Net import Net
 
 # writer1 = SummaryWriter('./log')
 
@@ -27,7 +26,7 @@ picNum = 0
 # File preprocessing
 print('Data preprocessing begins!')
 
-allData = readFromText('./dhzData')
+allData = readFromText('../dhzData')
 allData = processMin_Max_Norm(allData)
 print('dataset Min-Max normalization end!')
 
@@ -36,20 +35,14 @@ random.shuffle(timeSeqGameData)
 print('read time Seq Data number: ', len(timeSeqGameData))
 
 #dataset construction
-ssldata = SSLDataset(timeSeqGameData)
-ssldata.process()
+
 
 length = len(timeSeqGameData)
 train_len = int(0.7 * length)
 val_len = int(0.15 * length)
 test_len = length - train_len - val_len
 
-# model = s2vNet().to(device)
-# model = pnaNet().to(device)
-node_input_channels = np.array([4,4,4])
-node_features = np.array([4,4,4])
-output_channels = np.array([2,2,2])
-model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels)
+model = Net().to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
@@ -58,46 +51,23 @@ batch_num = int(train_len/batch_size) + 1
 
 def train():
     model.train()
+
     loss_all = 0
+    for data in train_data:
+        data = data.to(device)
+        optimizer.zero_grad()
 
-    for i in range(batch_num):
-        if(i == batch_num - 1):
-            optimizer.zero_grad()
-            data = ssldata.dataset[i*batch_size]
-            out = model(data)
-            label = data.y
-            loss = criterion(out[0], label[0])
-            loss = loss + criterion(out[1],label[1])
-            loss_all += loss.item()
-            for j in range(i*batch_size+1, train_len):
-                data = ssldata.dataset[j]
-                out = model(data)
-                label = data.y
-                loss += criterion(out[0], label[0])
-                loss += criterion(out[1],label[1])
-                loss_all += loss.item()
-            loss.backward()
-            optimizer.step()
-        else:
-            optimizer.zero_grad()
-            data = ssldata.dataset[i*batch_size]
-            out = model(data)
-            label = data.y
-            loss = criterion(out[0], label[0])
-            loss = loss + criterion(out[1],label[1])
-            loss_all += loss.item()
-            for j in range(i*batch_size+1, (i+1)*batch_size):
-                data = ssldata.dataset[j]
-                out = model(data)
-                label = data.y
-                loss = criterion(out[0], label[0])
-                loss = loss + criterion(out[1],label[1])
-                loss_all += loss.item()
-            loss.backward()
-            optimizer.step()
+        output = model(data)
+        label = data.y.to(device)
+        loss = criterion(output, label)
+        loss.backward()
+        loss_all += data.num_graphs * loss.item()
 
-    # # print('train loss: ', loss_all/train_len)
-    return loss_all/train_len
+        optimizer.step()
+        
+    return loss_all / len(train_dataset)
+
+
 
 def evaluate(loader, draw=False):
     model.eval()
