@@ -15,7 +15,8 @@ from dataPreprocess import readFromText, generateTimeSeqData, convertPlayData2Li
 from visualize import plotTimeSeqData, plotData, drawRobots
 from SSLDataset import SSLData, SSLDataset
 from Net import s2vNet, pnaNet, PNAMODEL
-from heterogeneous.heter import HeterogeneousGraph, MultiHeterGraph
+from heterogeneous.myheter import HeterogeneousGraph, MultiHeterGraph
+from debug.debug import plot_grad_flow
 
 # writer1 = SummaryWriter('./log')
 
@@ -49,14 +50,14 @@ test_len = length - train_len - val_len
 node_input_channels = np.array([4,4,4])
 node_features = np.array([4,4,4])
 output_channels = np.array([2,2,2])
-model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels)
+model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
 batch_size = 30
 batch_num = int(train_len/batch_size) + 1
 
-def train():
+def train(epoch):
     model.train()
     loss_all = 0
 
@@ -64,14 +65,14 @@ def train():
         if(i == batch_num - 1):
             optimizer.zero_grad()
             data = ssldata.dataset[i*batch_size]
-            out = model(data)
+            out = model(data.x, data.edges)
             label = data.y
             loss = criterion(out[0], label[0])
             loss = loss + criterion(out[1],label[1])
             loss_all += loss.item()
             for j in range(i*batch_size+1, train_len):
                 data = ssldata.dataset[j]
-                out = model(data)
+                out = model(data.x, data.edges)
                 label = data.y
                 loss += criterion(out[0], label[0])
                 loss += criterion(out[1],label[1])
@@ -81,21 +82,21 @@ def train():
         else:
             optimizer.zero_grad()
             data = ssldata.dataset[i*batch_size]
-            out = model(data)
+            out = model(data.x, data.edges)
             label = data.y
             loss = criterion(out[0], label[0])
             loss = loss + criterion(out[1],label[1])
             loss_all += loss.item()
             for j in range(i*batch_size+1, (i+1)*batch_size):
                 data = ssldata.dataset[j]
-                out = model(data)
+                out = model(data.x, data.edges)
                 label = data.y
                 loss = criterion(out[0], label[0])
                 loss = loss + criterion(out[1],label[1])
                 loss_all += loss.item()
             loss.backward()
             optimizer.step()
-
+    plot_grad_flow(model.named_parameters(), save="./markimage/{:03d}".format(epoch))
     # # print('train loss: ', loss_all/train_len)
     return loss_all/train_len
 
@@ -108,7 +109,7 @@ def evaluate(loader, draw=False):
     with torch.no_grad():
         for data in loader:
             # accNum = 0
-            out = model(data)
+            out = model(data.x, data.edges)
             label = data.y
             loss = criterion(out[0], label[0])
             loss = loss + criterion(out[1], label[1])
@@ -160,7 +161,7 @@ def main():
             batch_size = 20
             batch_num = int(train_len/batch_size) + 1
         picNum = 0
-        loss = train()
+        loss = train(epoch)
 
         # torch.save(model, '2spredforGNN_plus/{:03d}.pth'.format(epo))
 
