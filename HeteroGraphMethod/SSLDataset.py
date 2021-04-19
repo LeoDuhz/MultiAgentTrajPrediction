@@ -1,7 +1,7 @@
 import torch
 from itertools import chain
 import itertools
-from dataPreprocess import generateTimeSeqData, convertPlayData2List, convertPlayData2Y, convertBallData2List, convertBallData2Y, checkPlayerDataValid, checkBallDataValid
+from dataPreprocess import generateTimeSeqData, convertPlayData2List, convertPlayData2Y, convertBallData2List, convertBallData2Y, generateEdges, checkPlayerDataValid, checkBallDataValid
 from parameters import playerNum, device
 
 
@@ -26,9 +26,15 @@ class SSLDataset():
             x.append(torch.tensor(convertPlayData2List(cur.yellowData)).to(device))
             x.append(torch.tensor(convertBallData2List(cur.ballData)).to(device))
             
-            node_num = [playerNum,playerNum,1]
-            a = [list(range(n)) for n in node_num]
-            edges = [torch.LongTensor(list(itertools.product(a[i],a[j]))).T.to(device) for i in range(3) for j in range(3)]
+            # node_num = [playerNum,playerNum,1]
+            # a = [list(range(n)) for n in node_num]
+            # edges = [torch.LongTensor(list(itertools.product(a[i],a[j]))).T.to(device) for i in range(3) for j in range(3)]
+            # print('edges 111: ', edges)
+
+
+            dataList = [cur.blueData, cur.yellowData, cur.ballData]
+            edges = [torch.LongTensor(generateEdges(dataList[i], dataList[j])).to(device) for i in range(3) for j in range(3)]
+            # print('edges 222: ', edges)
             
             y = []
             y.append(torch.tensor(convertPlayData2Y(predict.blueData)).to(device))

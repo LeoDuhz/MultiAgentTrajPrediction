@@ -50,11 +50,12 @@ test_len = length - train_len - val_len
 node_input_channels = np.array([4,4,4])
 node_features = np.array([4,4,4])
 output_channels = np.array([2,2,2])
+
 model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
-batch_size = 30
+batch_size = 40
 batch_num = int(train_len/batch_size) + 1
 
 def train(epoch):

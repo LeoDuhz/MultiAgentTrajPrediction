@@ -37,6 +37,9 @@ class HeterogeneousGraph(torch.nn.Module):
         o = [[self.model[i][j]((x[i],x[j]),edge_index[i][j],size=(None if i==j else (x[i].shape[0],x[j].shape[0]))) for j in range(self.category)] for i in range(self.category)]
         
         outs = [self.lin[i](torch.cat([o[j][i] for j in range(self.category)],dim=-1)) for i in range(self.category)]
+
+        for i in range(3):
+            outs[i] = torch.sigmoid(outs[i])
         return outs
 
 class MultiHeterGraph(torch.nn.Module):

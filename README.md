@@ -19,7 +19,13 @@ code and materials for Multi-Agent Trajectory Predition Based on Graph Neural Ne
 
 - `mys2v.py`: basic graph neural network we use 
 
+- `pna/mypna.py`: Heterogeneous PNAConv
+
+- `heterogeneous/myheter.py`: Heterogeneous graph neural network frame supporting different GNNs
+
 - `Net.py`: neural network we construct
+
+- `debug/debug.py`: draw gradient of graph neural network
 
 - `visualize.py`: draw pictures of our training result
 

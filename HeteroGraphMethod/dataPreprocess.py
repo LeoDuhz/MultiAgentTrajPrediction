@@ -1,3 +1,4 @@
+import math
 from dataFormat import TimeSeqGameData
 from parameters import timeDiff, playerNum, fieldLength, fieldWidth, penaltyLength, penaltyWidth
 from dataFormat import Player, BallData, GameData, TimeSeqGameData
@@ -50,6 +51,41 @@ def convertBallData2Y(ballData):
 
     return data_list
 
+def generateEdges(gameData1, gameData2):
+    source = []
+    target = []
+
+    #special check for ballData for it is not list type data
+    if(type(gameData1).__name__ != 'list'):
+        gameData1 = [gameData1]
+
+    if(type(gameData2).__name__ != 'list'):
+        gameData2 = [gameData2]
+
+
+    for i in range(len(gameData1)):
+        for j in range(len(gameData2)):
+            if(checkConnection(gameData1[i], gameData2[j])):
+                source.append(i)
+                target.append(j)
+    
+    return [source, target]
+
+def checkConnection(source, target):
+    threshold = 3000
+
+    #reverse normalization
+    source_x = source.x * fieldLength - fieldLength/2
+    source_y = source.y * fieldWidth - fieldWidth/2
+    target_x = target.x * fieldLength - fieldLength/2
+    target_y = target.y * fieldWidth - fieldWidth/2
+
+    if(math.hypot(source_x-target_x, source_y-target_y) <= threshold):
+        return True
+    
+    return False
+
+
 def checkPlayerDataValid(playerData):
     if(len(playerData) > playerNum):
         print('Player number is too large, pass')
@@ -86,7 +122,7 @@ def readFromText(fileName):
     ignoreCnt = 0
     startTime = 500
 
-#extract data from text file
+    #extract data from text file
     while True:  
         # dat = line.split(' ')
         
@@ -164,8 +200,6 @@ def readFromText(fileName):
     print('End of data preprocessing, the size of useful data can be used', len(allData))
 
     return allData
-
-
 
 def processMin_Max_Norm(allData):
     bluevelx = []

@@ -89,10 +89,14 @@ class MultiS2V(torch.nn.Module):
                 out = features[j].index_select(0,edge_index[eii][0])
                 # print('i, j, out: ', i, j, out)
                 index = edge_index[eii][1]
-                # print('before scatter, out shape: ', out.shape)
+                print('eii: ', edge_index[eii])
+                print('index: ', index)
+                print('before scatter, out shape: ', out.shape)
                 out = scatter_add(out,index,dim=0)
-                # print('after scatter_add, out shape: ', out.shape)
+                print('after scatter_add, out shape: ', out.shape)
+                print('before o shape: ', o.shape)
                 o = o + self.lin2[j][i](out)
+                print('after o shape: ', o.shape)
             o2.append(o)
 
      

@@ -1,0 +1,1 @@
+This folder is for *S2V* method with batch size changed to 40.
