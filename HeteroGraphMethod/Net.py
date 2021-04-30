@@ -26,11 +26,12 @@ class s2vNet(torch.nn.Module):
         # self.lin1 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
         # self.lin2 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
         # self.lin3 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
-        # self.lin4 = MList([Lin(node_input_channels[i],node_input_channels[i]) for i in range(3)])
+        self.lin4 = MList([Lin(node_input_channels[i],node_input_channels[i]) for i in range(3)])
 
     def forward(self, x, edges):
-        # for i in range(3):
-        #     x[i] = self.lin4[i](x[i])
+        for i in range(3):
+            x[i] = self.lin4[i](x[i])
+        edge_index = edges
         
         x = self.conv1(x, edge_index)
         # print('x shape: ', x[0].size())
