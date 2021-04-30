@@ -1,7 +1,8 @@
 import torch
 
 #parameters initialization
-playerNum = 6
+category = 3
+playerNum = 8
 fieldLength = 9000
 fieldWidth = 6000
 penaltyLength = 2000

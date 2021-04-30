@@ -9,6 +9,7 @@ from torch.nn import Linear as Lin, ModuleList as MList
 from torch.nn.functional import relu
 from torch_scatter import scatter_add
 from torch_geometric.utils import add_self_loops
+from parameters import category
 # from torchviz import make_dot
 
 # device = G_DEVICE #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -18,7 +19,7 @@ class MultiS2V(torch.nn.Module):
         super(self.__class__,self).__init__()
 
         ##### TODO
-        self.category = 3
+        self.category = category
         ##### need more general module
 
         assert(node_input_channels.shape == (self.category,))
@@ -50,7 +51,8 @@ class MultiS2V(torch.nn.Module):
         assert(len(edge_index) == self.category**2)
         # assert(len(edge_attr) == self.category**2)
 
-        features = x
+        # features = x
+        features = [torch.zeros(x[i].shape[0],self.node_feature_channels[i]).to(device) for i in range(self.category)]
         # print('features: ', features )
         for i in range(self.iteration_num):
             features = self.s2v(x,features,edge_index)
@@ -89,17 +91,15 @@ class MultiS2V(torch.nn.Module):
                 out = features[j].index_select(0,edge_index[eii][0])
                 # print('i, j, out: ', i, j, out)
                 index = edge_index[eii][1]
-                print('eii: ', edge_index[eii])
-                print('index: ', index)
-                print('before scatter, out shape: ', out.shape)
+                # print('eii: ', edge_index[eii])
+                # print('index: ', index)
+                # print('before scatter, out shape: ', out.shape)
                 out = scatter_add(out,index,dim=0)
-                print('after scatter_add, out shape: ', out.shape)
-                print('before o shape: ', o.shape)
+                # print('after scatter_add, out shape: ', out.shape)
+                # print('before o shape: ', o.shape)
                 o = o + self.lin2[j][i](out)
-                print('after o shape: ', o.shape)
+                # print('after o shape: ', o.shape)
             o2.append(o)
-
-     
 
         out = [o1[i]+o2[i] for i in range(self.category)]
         # out = [o2[i] for i in range(self.category)]

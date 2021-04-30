@@ -28,7 +28,7 @@ picNum = 0
 # File preprocessing
 print('Data preprocessing begins!')
 
-allData = readFromText('./dhzData')
+allData = readFromText('../eightcarData')
 allData = processMin_Max_Norm(allData)
 print('dataset Min-Max normalization end!')
 
@@ -45,17 +45,17 @@ train_len = int(0.7 * length)
 val_len = int(0.15 * length)
 test_len = length - train_len - val_len
 
-# model = s2vNet().to(device)
+model = s2vNet().to(device)
 # model = pnaNet().to(device)
 node_input_channels = np.array([4,4,4])
 node_features = np.array([4,4,4])
 output_channels = np.array([2,2,2])
 
-model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels).to(device)
+# model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
-batch_size = 40
+batch_size = 50
 batch_num = int(train_len/batch_size) + 1
 
 def train(epoch):
