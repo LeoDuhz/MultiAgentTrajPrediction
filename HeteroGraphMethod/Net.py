@@ -8,7 +8,7 @@ from torch.nn.functional import relu
 import torch.nn.functional as F
 
 node_input_channels = np.array([4,4,4])
-node_features = np.array([4,4,4])
+node_features = np.array([10,10,10])
 output_channels = np.array([2,2,2])
 # c_edge = np.array([[2,2,2],[2,2,2],[2,2,2]])
 # c_edge = np.array([[1,3],[2,4]])
@@ -23,7 +23,7 @@ class s2vNet(torch.nn.Module):
         self.conv1 = MultiS2V(node_input_channels, output_channels, node_features)
         # self.lin1 = Linear(6,6)
         # self.lin2 = Linear(6,6)
-        # self.lin1 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
+        self.lin1 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
         # self.lin2 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
         # self.lin3 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
         # self.lin4 = MList([Lin(node_input_channels[i],node_input_channels[i]) for i in range(3)])
@@ -37,7 +37,7 @@ class s2vNet(torch.nn.Module):
         # print('x shape: ', x[0].size())
         for i in range(3):
             # x[i] = F.relu(x[i])
-            # x[i] = self.lin1[i](x[i])
+            x[i] = self.lin1[i](x[i])
             # x[i] = self.lin2[i](x[i])
             # x[i] = self.lin3[i](x[i])
             # x[i] = F.dropout(x[i], training=self.training)

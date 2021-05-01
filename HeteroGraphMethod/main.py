@@ -18,7 +18,7 @@ from Net import s2vNet, pnaNet, PNAMODEL
 from heterogeneous.myheter import HeterogeneousGraph, MultiHeterGraph
 from debug.debug import plot_grad_flow
 
-# writer1 = SummaryWriter('./log')
+writer1 = SummaryWriter()
 
 epo = 0
 picNum = 0
@@ -42,8 +42,8 @@ ssldata.process()
 
 length = len(timeSeqGameData)
 train_len = int(0.7 * length)
-val_len = int(0.15 * length)
-test_len = length - train_len - val_len
+val_len = 0
+test_len = length - train_len
 
 model = s2vNet().to(device)
 # model = pnaNet().to(device)
@@ -55,7 +55,7 @@ output_channels = np.array([2,2,2])
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
-batch_size = 50
+batch_size = 35
 batch_num = int(train_len/batch_size) + 1
 
 def train(epoch):
@@ -97,7 +97,7 @@ def train(epoch):
                 loss_all += loss.item()
             loss.backward()
             optimizer.step()
-    plot_grad_flow(model.named_parameters(), save="./markimage/{:03d}".format(epoch))
+    plot_grad_flow(model.named_parameters(), save="./markimage2/{:03d}".format(epoch))
     # # print('train loss: ', loss_all/train_len)
     return loss_all/train_len
 
@@ -147,7 +147,7 @@ def evaluate(loader, draw=False):
             if draw:
                 drawRobots(o,l)
     print('length of loader:', len(loader), "accNum: ", accNum, 'real accuracy: ', accNumReal/len(loader)/2/playerNum, 'average error: ', ERROR_ALL/len(loader)/2/playerNum)
-    return accNum / (len(loader) * (2 * playerNum)), loss_all / len(loader)
+    return accNum / (len(loader) * (2 * playerNum)), loss_all / len(loader), accNumReal/len(loader)/2/playerNum
 
 def main():
     print('Start training')
@@ -169,13 +169,15 @@ def main():
         if epoch > -1:
             # if epoch > 40:
             #     draw = True
-            train_acc, train_loss = evaluate(ssldata.dataset[:train_len])
+            train_acc, train_loss, real_train_acc = evaluate(ssldata.dataset[:train_len])
             # val_acc, val_loss = evaluate(ssldata.dataset[train_len:train_len+val_len])
-            test_acc, test_loss = evaluate(ssldata.dataset[train_len+val_len:])
-        # writer1.add_scalar('train loss', loss, epoch)
-        # writer1.add_scalar('train accuracy', train_acc, epoch)
-        # # writer1.add_scalar('valid accuracy', val_acc, epoch)
-        # writer1.add_scalar('test accuracy', test_acc, epoch)
+            test_acc, test_loss, real_test_acc = evaluate(ssldata.dataset[train_len+val_len:])
+        writer1.add_scalar('train loss', train_loss, epoch)
+        writer1.add_scalar('train accuracy', train_acc, epoch)
+        writer1.add_scalar('real train accuracy', real_train_acc)
+        writer1.add_scalar('test loss', test_loss, epoch)
+        writer1.add_scalar('test accuracy', test_acc, epoch)
+        writer1.add_scalar('real test accuracy', real_test_acc)
         # writer1.add_scalar('loss/train loss', train_loss, epoch)
         # # writer1.add_scalar('loss/val loss', val_loss, epoch)
         # writer1.add_scalar('loss/test loss', test_loss, epoch)

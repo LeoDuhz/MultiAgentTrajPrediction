@@ -3,7 +3,7 @@ code and materials for Multi-Agent Trajectory Predition Based on Graph Neural Ne
 
 
 
-`Note`:This repo stops to be updated,  and for more further work of us, you can switch to this [repo](https://github.com/LeoDuhz/LOG_Analysis) which keeps on updating.
+`Note`:This repo stops to be updated,  and for further work of us, you can switch to this [repo](https://github.com/LeoDuhz/LOG_Analysis) which keeps on updating.
 
 
 
