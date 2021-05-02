@@ -1,6 +1,7 @@
+import torch
 import math
 from dataFormat import TimeSeqGameData
-from parameters import timeDiff, playerNum, fieldLength, fieldWidth, penaltyLength, penaltyWidth
+from parameters import timeDiff, playerNum, fieldLength, fieldWidth, penaltyLength, penaltyWidth, device
 from dataFormat import Player, BallData, GameData, TimeSeqGameData
 from referee import NORMAL_START, FORCE_START
 
@@ -8,7 +9,7 @@ from referee import NORMAL_START, FORCE_START
 def generateTimeSeqData(allData):
     allTimeSeqData = []
     for i in range(len(allData)):
-        if(i%1 != 0):
+        if(i%3 != 0):
             continue
         # time = allData[i].time
         for j in range(i+1, len(allData)):
@@ -70,6 +71,140 @@ def generateEdges(gameData1, gameData2):
                 target.append(j)
     
     return [source, target]
+
+def findKNearestNeighbor(gameData):
+    K = 8
+
+    blueNeighborList = []
+    yellowNeighborList = []
+    ballNeighborList = []
+    #blue data's K nearest neighbour
+    for blue_i in range(len(gameData.blueData)):
+        bluePlayer = gameData.blueData[blue_i]
+        blueDist = []
+
+        for i in range(len(gameData.blueData)):
+            dist = calDist(gameData.blueData[i], bluePlayer)
+            blueDist.append(('blue', i, dist))
+        
+        for i in range(len(gameData.yellowData)):
+            dist = calDist(gameData.yellowData[i], bluePlayer)
+            blueDist.append(('yellow', i, dist))
+        
+        dist = calDist(gameData.ballData, bluePlayer)
+        blueDist.append(('ball', 0, dist))
+        blueDist.sort(key=lambda x:x[2])
+        blueKNeighbor = blueDist[:K]
+        blueKNeighbor.sort(key=lambda x:x[0])  #yellow blue ball
+        blueNeighborList.append(blueKNeighbor)
+
+    #yellow data's K nearest neighbour
+    for yellow_i in range(len(gameData.yellowData)):
+        yellowPlayer = gameData.yellowData[yellow_i]
+        yellowDist = []
+
+        for i in range(len(gameData.blueData)):
+            dist = calDist(gameData.blueData[i], yellowPlayer)
+            yellowDist.append(('blue', i, dist))
+        
+        for i in range(len(gameData.yellowData)):
+            dist = calDist(gameData.yellowData[i], yellowPlayer)
+            yellowDist.append(('yellow', i, dist))
+        
+        dist = calDist(gameData.ballData, yellowPlayer)
+        yellowDist.append(('ball', 0, dist))
+        yellowDist.sort(key=lambda x:x[2])
+        yellowKNeighbor = yellowDist[:K]
+        yellowKNeighbor.sort(key=lambda x:x[0])  #yellow blue ball
+        yellowNeighborList.append(yellowKNeighbor)
+
+    #ball data's K nearest neighbour
+    ballPlayer = gameData.ballData
+    ballDist = []
+
+    for i in range(len(gameData.blueData)):
+        dist = calDist(gameData.blueData[i], ballPlayer)
+        ballDist.append(('blue', i, dist))
+    
+    for i in range(len(gameData.yellowData)):
+        dist = calDist(gameData.yellowData[i], ballPlayer)
+        ballDist.append(('yellow', i, dist))
+    
+    dist = calDist(gameData.ballData, ballPlayer)
+    ballDist.append(('ball', 0, dist))
+    ballDist.sort(key=lambda x:x[2])
+    ballKNeighbor = ballDist[:K]
+    ballKNeighbor.sort(key=lambda x:x[0])  #yellow blue ball
+    ballNeighborList.append(ballKNeighbor)
+
+    #generate edges
+    bb_s, bb_t, by_s, by_t, bba_s, bba_t = [], [], [], [], [], []
+    yb_s, yb_t, yy_s, yy_t, yba_s, yba_t = [], [], [], [], [], []
+    bab_s, bab_t, bay_s, bay_t, baba_s, baba_t = [], [], [], [], [], []
+
+    #generate blue edges as target node
+    for i in range(len(blueNeighborList)):
+        for j in range(len(blueNeighborList[i])):
+            neighbour = blueNeighborList[i][j]
+            if neighbour[0] == 'blue':
+                bb_s.append(neighbour[1])
+                bb_t.append(i)
+            if neighbour[0] == 'yellow':
+                yb_s.append(neighbour[1])
+                yb_t.append(i)
+            if neighbour[0] == 'ball':
+                bab_s.append(neighbour[1])
+                bab_t.append(i)
+    
+
+    #generate yellow edges as target node
+    for i in range(len(yellowNeighborList)):
+        for j in range(len(yellowNeighborList[i])):
+            neighbour = blueNeighborList[i][j]
+            if neighbour[0] == 'blue':
+                by_s.append(neighbour[1])
+                by_t.append(i)
+            if neighbour[0] == 'yellow':
+                yy_s.append(neighbour[1])
+                yy_t.append(i)
+            if neighbour[0] == 'ball':
+                bay_s.append(neighbour[1])
+                bay_t.append(i)
+    
+    #generate ball edges as target node
+    for i in range(len(ballNeighborList)):
+        for j in range(len(ballNeighborList[i])):
+            neighbour = ballNeighborList[i][j]
+            if neighbour[0] == 'blue':
+                bba_s.append(neighbour[1])
+                bba_t.append(i)
+            if neighbour[0] == 'yellow':
+                yba_s.append(neighbour[1])
+                yba_t.append(i)
+            if neighbour[0] == 'ball':
+                baba_s.append(neighbour[1])
+                baba_t.append(i)
+    
+    blueblue = torch.LongTensor([bb_s, bb_t]).to(device)
+    blueyellow = torch.LongTensor([by_s, by_t]).to(device)
+    blueball = torch.LongTensor([bba_s, bba_t]).to(device)
+    yellowblue = torch.LongTensor([yb_s, yb_t]).to(device)
+    yellowyellow = torch.LongTensor([yy_s, yy_t]).to(device)
+    yellowball = torch.LongTensor([yba_s, yba_t]).to(device)
+    ballblue = torch.LongTensor([bab_s, bab_t]).to(device)
+    ballyellow = torch.LongTensor([bay_s, bay_t]).to(device)
+    ballball = torch.LongTensor([baba_s, baba_t]).to(device)
+
+    return [blueblue, blueyellow, blueball, yellowblue, yellowyellow, yellowball, ballblue, ballyellow, ballball]
+    
+
+def calDist(player1, player2):
+    player1_x = player1.x * fieldLength - fieldLength/2
+    player1_y = player1.y * fieldWidth - fieldWidth/2
+    player2_x = player2.x * fieldLength - fieldLength/2
+    player2_y = player2.y * fieldWidth - fieldWidth/2
+
+    return math.hypot(player1_x-player2_x, player1_y-player2_y)
 
 def checkConnection(source, target):
     threshold = 3000

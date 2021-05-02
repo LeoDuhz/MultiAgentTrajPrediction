@@ -15,7 +15,7 @@ from parameters import category
 # device = G_DEVICE #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class MultiS2V(torch.nn.Module):
-    def __init__(self,node_input_channels,output_channels,node_feature_channels=(6,6,4),iteration_num=1):
+    def __init__(self,node_input_channels,output_channels,node_feature_channels=(6,6,4),iteration_num=2):
         super(self.__class__,self).__init__()
 
         ##### TODO
