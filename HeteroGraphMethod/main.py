@@ -14,11 +14,11 @@ from parameters import playerNum, fieldLength, fieldWidth, penaltyLength, penalt
 from dataPreprocess import readFromText, generateTimeSeqData, convertPlayData2List, convertPlayData2Y, convertBallData2List, convertBallData2Y, checkPlayerDataValid, checkBallDataValid, processMin_Max_Norm
 from visualize import plotTimeSeqData, plotData, drawRobots
 from SSLDataset import SSLData, SSLDataset
-from Net import s2vNet, pnaNet, PNAMODEL
+from Net import s2vNet, s2vNet2, pnaNet, PNAMODEL
 from heterogeneous.myheter import HeterogeneousGraph, MultiHeterGraph
 from debug.debug import plot_grad_flow
 
-writer1 = SummaryWriter()
+
 
 epo = 0
 picNum = 0
@@ -45,14 +45,16 @@ train_len = int(0.7 * length)
 val_len = 0
 test_len = length - train_len
 
-model = s2vNet().to(device)
-# model = pnaNet().to(device)
 node_input_channels = np.array([4,4,4])
 node_features = np.array([4,4,4])
 output_channels = np.array([2,2,2])
 
+model = s2vNet().to(device)
+# model = s2vNet2().to(device)
 # model = HeterogeneousGraph(PNAMODEL, node_input_channels, output_channels).to(device)
+
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
+# optimizer = optim.Adam(model.parameters(), lr=0.002)
 # criterion = torch.nn.MSELoss()
 criterion = torch.nn.L1Loss()
 batch_size = 35
@@ -174,10 +176,10 @@ def main():
             test_acc, test_loss, real_test_acc = evaluate(ssldata.dataset[train_len+val_len:])
         writer1.add_scalar('train loss', train_loss, epoch)
         writer1.add_scalar('train accuracy', train_acc, epoch)
-        writer1.add_scalar('real train accuracy', real_train_acc)
+        writer1.add_scalar('real train accuracy', real_train_acc, epoch)
         writer1.add_scalar('test loss', test_loss, epoch)
         writer1.add_scalar('test accuracy', test_acc, epoch)
-        writer1.add_scalar('real test accuracy', real_test_acc)
+        writer1.add_scalar('real test accuracy', real_test_acc, epoch)
         # writer1.add_scalar('loss/train loss', train_loss, epoch)
         # # writer1.add_scalar('loss/val loss', val_loss, epoch)
         # writer1.add_scalar('loss/test loss', test_loss, epoch)
@@ -190,7 +192,7 @@ def main():
 
 
 if __name__ == "__main__":
-
+    writer1 = SummaryWriter()
     main()
     print('End of All Tasks!!!')
 

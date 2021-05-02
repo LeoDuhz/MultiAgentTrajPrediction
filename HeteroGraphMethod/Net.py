@@ -45,6 +45,37 @@ class s2vNet(torch.nn.Module):
 
         return x
 
+class s2vNet2(torch.nn.Module):
+    def __init__(self):
+        super(s2vNet2, self).__init__()
+        
+        self.conv1 = MultiS2V(node_input_channels, output_channels, node_features)
+        self.conv2 = MultiS2V(output_channels, output_channels, node_features)
+        # self.lin1 = Linear(6,6)
+        # self.lin2 = Linear(6,6)
+        self.lin1 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
+        self.lin2 = MList([Lin(output_channels[i],output_channels[i]) for i in range(3)])
+        # self.lin4 = MList([Lin(node_input_channels[i],node_input_channels[i]) for i in range(3)])
+
+    def forward(self, x, edges):
+        # for i in range(3):
+        #     x[i] = self.lin4[i](x[i])
+        edge_index = edges
+        
+        x = self.conv1(x, edge_index)
+        # print('x shape: ', x[0].size())
+        for i in range(3):
+            # x[i] = F.relu(x[i])
+            # x[i] = F.dropout(x[i], training=self.training)
+            x[i] = self.lin1[i](x[i])
+
+        x = self.conv2(x, edge_index)
+
+        for i in range(3): 
+            x[i] = self.lin2[i](x[i])   
+            x[i] = torch.sigmoid(x[i])
+
+        return x
 
 class pnaNet(torch.nn.Module):
     def __init__(self):
